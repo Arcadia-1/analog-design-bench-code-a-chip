@@ -90,9 +90,10 @@ def copy_task(slug: str, dest: Path, ai_artifact: Path | None) -> None:
     ref = json.loads((task / "results" / "reference.json").read_text())
     checks = [{"name": c["id"], "status": c["status"], "message": c["message"]} for c in ref["checks"]]
     (dest / "reference_signoff.json").write_text(json.dumps(checks, indent=1) + "\n")
-    svg = ADB / "site" / "public" / "schematics" / "v2" / f"{slug}.svg"
-    if svg.is_file():
-        shutil.copy(svg, dest / "reference_schematic.svg")
+    # Schematics: reference_schematic.png is the Analog Canvas export in
+    # ADB_ROOT/site/public/schematics/v2/<slug>.svg, rasterized at 1400 px with
+    # tools/render_thumbnails.mjs; ai_schematic.png / .icproj.json are the Analog
+    # Canvas drawings of ai.spi (added after this script runs).
     if ai_artifact is not None:
         run = ai_artifact.parent
         shutil.copy(ai_artifact, dest / "ai.spi")

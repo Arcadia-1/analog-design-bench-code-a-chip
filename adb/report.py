@@ -128,21 +128,61 @@ def plot_coverage(mat: pd.DataFrame) -> None:
     plt.show()
 
 
-def device_summary(netlist: Path) -> dict[str, int]:
-    """Count primitive devices in a SPICE netlist (top-level and subcircuits)."""
-    counts = {"MOSFETs": 0, "BJTs": 0, "R": 0, "C": 0, "L": 0}
-    for line in netlist.read_text(errors="replace").splitlines():
+def _subcircuits(netlist: Path) -> dict:
+    lines, subs, cur = [], {}, None
+    for raw in netlist.read_text(errors="replace").splitlines():
+        if raw.startswith("+") and lines:
+            lines[-1] += " " + raw[1:]
+        else:
+            lines.append(raw)
+    for line in lines:
         s = line.strip()
-        if not s or s[0] in "*.+":
+        if not s or s[0] == "*":
             continue
         low = s.lower()
-        if re.search(r"sky130_fd_pr__(n|p)fet", low):
-            counts["MOSFETs"] += 1
-        elif re.search(r"sky130_fd_pr__(npn|pnp)", low):
-            counts["BJTs"] += 1
-        elif low[0] in "rcl" and len(s.split()) >= 3:
-            counts[low[0].upper()] += 1
-    return {k: v for k, v in counts.items() if v}
+        if low.startswith(".subckt"):
+            cur = s.split()[1].lower()
+            subs[cur] = []
+        elif low.startswith(".ends"):
+            cur = None
+        elif s[0] != ".":
+            subs.setdefault(cur, []).append(s)
+    return subs
+
+
+def device_summary(netlist: Path) -> dict[str, int]:
+    """Count primitive devices per instance, expanding subcircuit hierarchy."""
+    subs = _subcircuits(netlist)
+
+    def model_of(tokens):
+        return [w for w in tokens[1:] if "=" not in w][-1].lower()
+
+    used = {model_of(s.split()) for body in subs.values() for s in body if s[0] in "Xx"}
+    tops = [n for n in subs if n is not None and n not in used] or [None]
+
+    def count(name):
+        c = {"MOSFETs": 0, "R": 0, "C": 0, "L": 0}
+        for s in subs.get(name, []):
+            t = s.split()
+            low = s.lower()
+            if re.search(r"sky130_fd_pr__(n|p)fet", low):
+                c["MOSFETs"] += 1
+            elif t[0][0] in "Xx":
+                m = model_of(t)
+                if m in subs:
+                    for k, v in count(m).items():
+                        c[k] += v
+                elif "cap" in m:
+                    c["C"] += 1
+                elif "res" in m:
+                    c["R"] += 1
+                elif "ind" in m:
+                    c["L"] += 1
+            elif t[0][0].upper() in "RCL":
+                c[t[0][0].upper()] += 1
+        return c
+
+    return {k: v for k, v in count(tops[0]).items() if v}
 
 
 def signoff_table(case_dir: Path) -> str:
