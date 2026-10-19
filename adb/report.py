@@ -208,3 +208,30 @@ def signoff_table(case_dir: Path) -> str:
 def checks_passed(case_dir: Path, who: str) -> tuple[int, int]:
     c = json.loads((case_dir / f"{who}_signoff.json").read_text())
     return sum(x["status"] == "passed" for x in c), len(c)
+
+
+def plot_pairs(zip_path: Path, rows: list[tuple[str, str]], title: str) -> None:
+    """One family: each row is the human reference (left) and the AI design (right)."""
+    import io
+    import zipfile
+
+    z = zipfile.ZipFile(zip_path)
+    imgs = [(plt.imread(io.BytesIO(z.read(f"human/{s}.png"))), plt.imread(io.BytesIO(z.read(f"ai/{s}.png"))))
+            for s, _ in rows]
+    width, margin, gap, caption = 13.0, 0.1, 0.3, 0.32
+    panel = (width - 3 * margin) / 2
+    heights = [max(h.shape[0] / h.shape[1], a.shape[0] / a.shape[1]) * panel for h, a in imgs]
+    total = 0.5 + sum(heights) + len(rows) * (caption + gap)
+    fig = plt.figure(figsize=(width, total))
+    fig.text(margin / width, 1 - 0.1 / total, f"{title}   ·   left: human reference   ·   right: GPT-6 Astra",
+             fontsize=13, weight="bold", va="top")
+    y = total - 0.5
+    for (h, a), (_, text), rh in zip(imgs, rows, heights):
+        fig.text(margin / width, y / total, text, fontsize=10.5, va="top")
+        y -= caption
+        for j, im in enumerate((h, a)):
+            ax = fig.add_axes([(margin + j * (panel + margin)) / width, (y - rh) / total, panel / width, rh / total])
+            ax.imshow(im)
+            ax.axis("off")
+        y -= rh + gap
+    plt.show()
