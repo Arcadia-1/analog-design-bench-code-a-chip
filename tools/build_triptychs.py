@@ -10,7 +10,8 @@ A task is kept only when all of these hold:
 - the comparison is newer than every drawing;
 - both rollouts are the model's first passing rollout in data/attempts.csv.
 
-Kept comparisons are scaled to 2000 px wide and written to data/triptychs.zip.
+Kept comparisons are scaled to 2000 px wide and written to data/triptychs.zip. The copies the
+README shows (figures/triptychs/<task>.png) are refreshed from it.
 
     python tools/build_triptychs.py DRAWINGS
 """
@@ -79,6 +80,10 @@ def main() -> None:
             z.writestr(f"{task}.png", buf.getvalue())
             w.writerow([task] + [runs[(task, s)].removeprefix("run-") for s in MODELS])
         z.writestr("manifest.csv", manifest.getvalue())
+        names = set(z.namelist())
+    for fig in (HERE / "figures" / "triptychs").glob("*.png"):
+        if fig.name in names:
+            fig.write_bytes(zipfile.ZipFile(out).read(fig.name))
     print(f"{out.relative_to(HERE)}: {len(kept)} comparisons, {out.stat().st_size / 1e6:.1f} MB")
     for task, why in skipped:
         print(f"  skipped {task}: {why}")
