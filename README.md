@@ -54,7 +54,7 @@ and mismatch sample; bold marks the best of the three.
 
 ---
 
-## Example 1: Rail-to-rail class-AB op amp
+### Example 1: Rail-to-rail class-AB op amp
 
 #### Specification
 
@@ -85,7 +85,7 @@ process corners, 1.62 to 1.98 V, −40 to 125 °C) and at input common-mode leve
 
 ---
 
-## Example 2: Fully differential gain-8 sampling-feedback OTA
+### Example 2: Fully differential gain-8 sampling-feedback OTA
 
 #### Specification
 
@@ -118,7 +118,7 @@ to 85 °C) and in 20 local-mismatch samples.
 
 ---
 
-## Example 3: 2 GHz LC VCO
+### Example 3: 2 GHz LC VCO
 
 #### Specification
 
