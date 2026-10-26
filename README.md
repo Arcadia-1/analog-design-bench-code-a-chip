@@ -1,4 +1,4 @@
-# Frontier LLMs Can Now Design Analog Circuit Blocks, Cheaply
+# Frontier LLMs Can Now Do Schematic-Level Design of Analog Blocks, Cheaply
 
 [![Code-a-Chip](https://img.shields.io/badge/IEEE%20SSCS%20Code--a--Chip-ISSCC%202027-00629B.svg)](https://github.com/sscs-ose/sscs-ose-code-a-chip.github.io)
 [![arXiv](https://img.shields.io/badge/arXiv-2609.33356-b31b1b.svg)](https://arxiv.org/abs/2609.33356)
