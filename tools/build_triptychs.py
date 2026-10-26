@@ -10,8 +10,8 @@ A task is kept only when all of these hold:
 - the comparison is newer than every drawing;
 - both rollouts are the model's first passing rollout in data/attempts.csv.
 
-Kept comparisons are scaled to 2000 px wide and written to figures/triptychs/<task>.png, with the drawn
-rollouts in data/triptychs.csv. The README's worked examples and its appendix (from "## Appendix" to the end) are
+Kept comparisons are written to figures/triptychs/: <task>.svg as drawn (the README shows these) and
+<task>.png scaled to 2000 px wide (the notebook embeds these). The drawn rollouts go to data/triptychs.csv. The README's worked examples and its appendix (from "## Appendix" to the end) are
 rewritten from them and from the metric tables in data/signoff/<task>.md, the appendix in task order.
 
     python tools/build_triptychs.py DRAWINGS
@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import csv
 import json
+import shutil
 import sys
 from pathlib import Path
 
@@ -71,7 +72,7 @@ def write_examples(n_kept: int, solved: dict[str, set]) -> None:
                   f"Task {r['slot']} · {r['family_short']} · solved by {len(solved[t])} of {k} models", "",
                   "#### Specification", "", spec.strip(), "", "#### Signoff results", "", "<div" + table.rstrip(), "",
                   "#### Schematics", "",
-                  f"![{title}: human reference, GPT-6 Astra and Claude Opus 5.5](figures/triptychs/{t}.png)", ""]
+                  f"![{title}: human reference, GPT-6 Astra and Claude Opus 5.5](figures/triptychs/{t}.svg)", ""]
     lines += ["---", "", ""]
     readme = HERE / "README.md"
     text = readme.read_text()
@@ -95,7 +96,7 @@ def write_appendix(kept: list[str], solved: dict[str, set]) -> None:
                   f"{r['family_short']} · solved by {len(solved[t])} of {configurations} models", ""]
         if table.exists():
             lines += [table.read_text().strip(), ""]
-        lines += [f"![{r['circuit']}: human reference, GPT-6 Astra and Claude Opus 5.5](figures/triptychs/{t}.png)", ""]
+        lines += [f"![{r['circuit']}: human reference, GPT-6 Astra and Claude Opus 5.5](figures/triptychs/{t}.svg)", ""]
     readme = HERE / "README.md"
     text = readme.read_text()
     readme.write_text(text[:text.index("## Appendix")] + "\n".join(lines))
@@ -128,7 +129,7 @@ def main() -> None:
             kept.append((task, png))
 
     OUT.mkdir(parents=True, exist_ok=True)
-    for old in OUT.glob("*.png"):
+    for old in [*OUT.glob("*.png"), *OUT.glob("*.svg")]:
         old.unlink()
     with open(HERE / "data" / "triptychs.csv", "w", newline="") as f:
         w = csv.writer(f)
@@ -137,6 +138,7 @@ def main() -> None:
             im = Image.open(png).convert("RGB")
             im = im.resize((WIDTH, round(im.height * WIDTH / im.width)), Image.LANCZOS).quantize(64)
             im.save(OUT / f"{task}.png", optimize=True)
+            shutil.copy(png.with_suffix(".svg"), OUT / f"{task}.svg")
             w.writerow([task] + [runs[(task, s)].removeprefix("run-") for s in MODELS])
     write_examples(len(kept), solved)
     write_appendix([t for t, _ in kept], solved)
