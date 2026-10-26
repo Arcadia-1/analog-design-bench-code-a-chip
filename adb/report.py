@@ -210,13 +210,11 @@ def checks_passed(case_dir: Path, who: str) -> tuple[int, int]:
     return sum(x["status"] == "passed" for x in c), len(c)
 
 
-def triptych_tasks(zip_path: Path) -> set[str]:
-    import zipfile
-
-    return {n[:-4] for n in zipfile.ZipFile(zip_path).namelist() if n.endswith(".png")}
+def triptych_tasks(folder: Path) -> set[str]:
+    return {p.stem for p in folder.glob("*.png")}
 
 
-def show_family(title: str, rows: list[tuple[str, str]], triptych_zip: Path, pairs_zip: Path) -> None:
+def show_family(title: str, rows: list[tuple[str, str]], triptychs: Path, pairs_zip: Path) -> None:
     """One family. Per task its caption, then the three-way comparison (reference, GPT-6 Astra, Claude Opus 5.5)
     where one exists, else the human reference next to GPT-6 Astra's design."""
     import io
@@ -224,13 +222,12 @@ def show_family(title: str, rows: list[tuple[str, str]], triptych_zip: Path, pai
 
     from IPython.display import Image, Markdown, display
 
-    tz, pz = zipfile.ZipFile(triptych_zip), zipfile.ZipFile(pairs_zip)
-    three = set(tz.namelist())
+    pz = zipfile.ZipFile(pairs_zip)
     display(Markdown(f"#### {title}"))
     for slug, text in rows:
         display(Markdown(text))
-        if f"{slug}.png" in three:
-            display(Image(tz.read(f"{slug}.png"), width=1300))
+        if (triptychs / f"{slug}.png").exists():
+            display(Image((triptychs / f"{slug}.png").read_bytes(), width=1300))
             continue
         imgs = [plt.imread(io.BytesIO(pz.read(f"{who}/{slug}.png"))) for who in ("human", "ai")]
         width, margin, head = 13.0, 0.1, 0.4
