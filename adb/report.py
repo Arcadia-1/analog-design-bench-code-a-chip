@@ -210,28 +210,38 @@ def checks_passed(case_dir: Path, who: str) -> tuple[int, int]:
     return sum(x["status"] == "passed" for x in c), len(c)
 
 
-def plot_pairs(zip_path: Path, rows: list[tuple[str, str]], title: str) -> None:
-    """One family: each row is the human reference (left) and the AI design (right)."""
+def triptych_tasks(zip_path: Path) -> set[str]:
+    import zipfile
+
+    return {n[:-4] for n in zipfile.ZipFile(zip_path).namelist() if n.endswith(".png")}
+
+
+def show_family(title: str, rows: list[tuple[str, str]], triptych_zip: Path, pairs_zip: Path) -> None:
+    """One family. Per task its caption, then the three-way comparison (reference, GPT-6 Astra, Claude Opus 5.5)
+    where one exists, else the human reference next to GPT-6 Astra's design."""
     import io
     import zipfile
 
-    z = zipfile.ZipFile(zip_path)
-    imgs = [(plt.imread(io.BytesIO(z.read(f"human/{s}.png"))), plt.imread(io.BytesIO(z.read(f"ai/{s}.png"))))
-            for s, _ in rows]
-    width, margin, gap, caption = 13.0, 0.1, 0.3, 0.32
-    panel = (width - 3 * margin) / 2
-    heights = [max(h.shape[0] / h.shape[1], a.shape[0] / a.shape[1]) * panel for h, a in imgs]
-    total = 0.5 + sum(heights) + len(rows) * (caption + gap)
-    fig = plt.figure(figsize=(width, total))
-    fig.text(margin / width, 1 - 0.1 / total, f"{title}   ·   left: human reference   ·   right: GPT-6 Astra",
-             fontsize=13, weight="bold", va="top")
-    y = total - 0.5
-    for (h, a), (_, text), rh in zip(imgs, rows, heights):
-        fig.text(margin / width, y / total, text, fontsize=10.5, va="top")
-        y -= caption
-        for j, im in enumerate((h, a)):
-            ax = fig.add_axes([(margin + j * (panel + margin)) / width, (y - rh) / total, panel / width, rh / total])
+    from IPython.display import Image, Markdown, display
+
+    tz, pz = zipfile.ZipFile(triptych_zip), zipfile.ZipFile(pairs_zip)
+    three = set(tz.namelist())
+    display(Markdown(f"#### {title}"))
+    for slug, text in rows:
+        display(Markdown(text))
+        if f"{slug}.png" in three:
+            display(Image(tz.read(f"{slug}.png"), width=1300))
+            continue
+        imgs = [plt.imread(io.BytesIO(pz.read(f"{who}/{slug}.png"))) for who in ("human", "ai")]
+        width, margin, head = 13.0, 0.1, 0.4
+        panel = (width - 3 * margin) / 2
+        h = max(im.shape[0] / im.shape[1] for im in imgs) * panel
+        fig = plt.figure(figsize=(width, h + head))
+        for j, (im, label) in enumerate(zip(imgs, ("Reference", "GPT-6 Astra"))):
+            x = margin + j * (panel + margin)
+            fig.text((x + panel / 2) / width, 1 - 0.05 / (h + head), label, ha="center", va="top", fontsize=13,
+                     weight="bold")
+            ax = fig.add_axes([x / width, 0, panel / width, h / (h + head)])
             ax.imshow(im)
             ax.axis("off")
-        y -= rh + gap
-    plt.show()
+        plt.show()
