@@ -149,13 +149,12 @@ def draw_time_and_cost(mt) -> None:
     a.get_xticklabels()[-1].set_horizontalalignment("right")
     a.set_title("Minutes per attempt", color="#111", fontsize=9.5, loc="left")
     b.barh(y, per_pass, height=0.68, color=colors)
-    b.set_xscale("log")
-    b.set_xlim(0.1, 200)
-    dollar_ticks(b.xaxis, [0.1, 1, 10, 100])
+    b.set_xlim(0, 52)  # linear, so bar length is proportional to cost; room right of the longest bar for its label
+    b.set_xticks([0, 20, 40], ["$0", "$20", "$40"])
     b.set_title("Cost per passing design", color="#111", fontsize=9.5, loc="left")
     for i in y:
         a.text(minutes[i] - 2, i, f"{minutes[i]:.0f}", va="center", ha="right", fontsize=7, color="white")
-        b.text(per_pass[i] * 1.1, i, f"${per_pass[i]:.2f}", va="center", fontsize=7, color="#111" if top[i] else "#777")
+        b.text(per_pass[i] + 0.8, i, f"${per_pass[i]:.2f}", va="center", fontsize=7, color="#111" if top[i] else "#777")
     tidy(a)
     tidy(b)
     a.set_yticks(y, [f"{m}  {p:.0%}" for m, p in zip(mt.model, mt["pass rate"])], fontsize=7.5)
