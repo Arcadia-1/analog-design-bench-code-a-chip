@@ -1,5 +1,7 @@
 # Frontier LLMs Can Now Do Schematic-Level Design of Analog Blocks, Cheaply
 
+https://github.com/user-attachments/assets/4939dbcc-16c1-47f2-9e29-5e6ab5db6a99
+
 [![Code-a-Chip](https://img.shields.io/badge/IEEE%20SSCS%20Code--a--Chip-ISSCC%202027-00629B.svg)](https://github.com/sscs-ose/sscs-ose-code-a-chip.github.io)
 [![arXiv](https://img.shields.io/badge/arXiv-2609.33356-b31b1b.svg)](https://arxiv.org/abs/2609.33356)
 [![Benchmark](https://img.shields.io/badge/benchmark-GitHub-181717.svg?logo=github&logoColor=white)](https://github.com/Arcadia-1/analog-design-bench)
