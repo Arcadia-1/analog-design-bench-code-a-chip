@@ -72,8 +72,7 @@ def draw_two_rates(mt, dark, light, legend, note, name) -> None:
     for i, slug in enumerate(mt.index):
         if top[i]:
             ax.text(1.5, i, note(slug), va="center", color="white", fontsize=9, weight="bold")
-    # Company names without a trailing "AI" ("Zhipu", not "Zhipu AI").
-    ax.set_yticks(list(y), [f"{r.model} ({r.provider.removesuffix(' AI')})" for r in mt.itertuples()])
+    ax.set_yticks(list(y), [f"{r.model} ({r.provider})" for r in mt.itertuples()])
     for label, t in zip(ax.get_yticklabels(), top):
         label.set_color("#111" if t else "#777")
     ax.set_ylim(len(mt) - 0.5, -0.5)
