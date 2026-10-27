@@ -7,7 +7,7 @@ the share of its 150 attempts that passed (dark) and the share of the 50 tasks i
 solved in at least one of three attempts (light). The two strongest models are
 highlighted. figures/pass_rate_and_spec_score.png has the same layout: the pass rate
 (binary reward, dark) over the spec score (the verifier's reward with partial credit,
-averaged over the 150 attempts, light).
+averaged over the 150 attempts, light). The two are drawn to sit side by side at half the README width.
 
 Also writes figures/cost_vs_pass_rate.png (pass rate against API cost per attempt) and
 figures/time_and_cost_by_model.png (minutes per attempt and cost per passing design), drawn to sit side
@@ -44,46 +44,49 @@ def main() -> None:
     plt.rcParams.update({"font.family": "sans-serif", "font.size": 9.5,
                          "font.sans-serif": ["Helvetica Neue", "Helvetica", "Arial", "DejaVu Sans"]})
     n_solved = mt["tasks solved (any of 3)"]
-    draw_two_rates(mt, mt["pass rate"], n_solved / len(tasks),
-                   ("Attempts passed", "Tasks solved in any of 3 attempts"),
-                   lambda s: f"{mt.at[s, 'passes']}/{mt.at[s, 'attempts']} attempts, {n_solved[s]}/{len(tasks)} tasks",
-                   "pass_rate_by_model.png")
     # The verifier's reward is 1 for a pass and partial credit for the signoff checks a failing design meets;
     # its mean is the leaderboard's spec score.
     spec = attempts.groupby("model_slug").reward.mean()
-    draw_two_rates(mt, mt["pass rate"], spec,
-                   ("Pass rate (binary reward)", "Spec score (partial credit)"),
-                   lambda s: f"{mt.at[s, 'pass rate']:.1%} pass rate, {spec[s]:.1%} spec score",
-                   "pass_rate_and_spec_score.png")
     with plt.rc_context({"font.size": 8.5}):
+        draw_two_rates(mt, mt["pass rate"], n_solved / len(tasks), "Pass rate and tasks solved",
+                       ("Attempts passed", "Tasks solved in any of 3 attempts"),
+                       lambda s: f"{mt.at[s, 'passes']}/{mt.at[s, 'attempts']} attempts, {n_solved[s]}/{len(tasks)} tasks",
+                       "pass_rate_by_model.png")
+        draw_two_rates(mt, mt["pass rate"], spec, "Pass rate and spec score",
+                       ("Pass rate (binary reward)", "Spec score (partial credit)"),
+                       lambda s: f"{mt.at[s, 'pass rate']:.1%} pass rate, {spec[s]:.1%} spec score",
+                       "pass_rate_and_spec_score.png")
         draw_cost_scatter(mt)
         draw_time_and_cost(mt)
     write_time_and_cost(mt)
 
 
-def draw_two_rates(mt, dark, light, legend, note, name) -> None:
+def draw_two_rates(mt, dark, light, title, legend, note, name) -> None:
     """One bar per model: the dark rate drawn over the light one (light >= dark), both as shares of 100%;
     the HIGHLIGHT strongest models are coloured and carry note(model_slug)."""
-    fig, ax = plt.subplots(figsize=(6.6, 4.9))
+    fig, ax = plt.subplots(figsize=HALF)
     y = range(len(mt))
     top = [i < HIGHLIGHT for i in y]
     ax.barh(y, light[mt.index] * 100, height=0.66, color=[ACCENT_LIGHT if t else MUTED_LIGHT for t in top])
     ax.barh(y, dark[mt.index] * 100, height=0.66, color=[ACCENT if t else MUTED for t in top])
     for i, slug in enumerate(mt.index):
         if top[i]:
-            ax.text(1.5, i, note(slug), va="center", color="white", fontsize=9, weight="bold")
-    ax.set_yticks(list(y), [f"{r.model} ({r.provider})" for r in mt.itertuples()])
+            ax.text(1.5, i, note(slug), va="center", color="white", fontsize=7, weight="bold")
+    ax.set_yticks(list(y), [f"{r.model} ({r.provider})" for r in mt.itertuples()], fontsize=7.5)
     for label, t in zip(ax.get_yticklabels(), top):
         label.set_color("#111" if t else "#777")
     ax.set_ylim(len(mt) - 0.5, -0.5)
     ax.set_xlim(0, 100)
     ax.set_xticks([0, 50, 100], ["0%", "50%", "100%"], color="#777")
+    ax.get_xticklabels()[-1].set_horizontalalignment("right")
     ax.tick_params(length=0)
     for spine in ax.spines.values():
         spine.set_visible(False)
+    ax.set_title(title, color="#111", fontsize=9.5, loc="left")
     ax.legend(handles=[Patch(color=ACCENT, label=legend[0]), Patch(color=ACCENT_LIGHT, label=legend[1])],
-              loc="lower right", frameon=False, fontsize=9)
-    plt.tight_layout()
+              loc="lower right", frameon=False, fontsize=7.5)
+    # Fixed margins rather than tight_layout, so the bars of the two side-by-side figures line up.
+    fig.subplots_adjust(left=0.42, right=0.97, top=0.93, bottom=0.06)
     fig.savefig(ROOT / "figures" / name, dpi=200)
 
 
