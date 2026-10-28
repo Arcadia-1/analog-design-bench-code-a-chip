@@ -1,0 +1,3 @@
+# Not part of the Code-a-Chip submission folder (git archive, used by .github/workflows/sync-code-a-chip.yml)
+.github export-ignore
+.gitattributes export-ignore

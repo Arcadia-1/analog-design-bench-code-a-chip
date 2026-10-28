@@ -1,0 +1,66 @@
+name: Sync the Code-a-Chip submission
+
+# Copies every commit on main into the ISSCC27 pull request
+# (https://github.com/sscs-ose/sscs-ose-code-a-chip.github.io/pull/222), whose branch
+# isscc27-analog-design-bench lives in the fork Arcadia-1/sscs-ose-code-a-chip.github.io, as the folder
+# ISSCC27/submitted_notebooks/analog_design_bench. The pull request must not change after the deadline,
+# 2026-10-31 11:59 AM PT (18:59 UTC), so the job does nothing from 18:00 UTC on.
+# CODEACHIP_PUSH_TOKEN: a fine-grained token with Contents read and write on the fork only.
+# .gitattributes keeps .github/ and itself out of the copied folder.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: sync-code-a-chip
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Stop after the deadline
+        id: open
+        run: |
+          if [ "$(date -u +%s)" -lt "$(date -u -d 2026-10-31T18:00:00Z +%s)" ]; then
+            echo "open=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Past 2026-10-31 18:00 UTC: the pull request is frozen, nothing to do."
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.open.outputs.open == 'true'
+
+      - name: Copy this commit into the pull request branch
+        if: steps.open.outputs.open == 'true'
+        env:
+          TOKEN: ${{ secrets.CODEACHIP_PUSH_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "$TOKEN" ]; then
+            echo "::error::The CODEACHIP_PUSH_TOKEN secret is not set."
+            exit 1
+          fi
+          folder=ISSCC27/submitted_notebooks/analog_design_bench
+          branch=isscc27-analog-design-bench
+          git clone -q --filter=blob:none --sparse --depth 1 --branch "$branch" \
+            "https://x-access-token:${TOKEN}@github.com/Arcadia-1/sscs-ose-code-a-chip.github.io.git" fork
+          git -C fork sparse-checkout set "$folder"
+          rm -rf "fork/$folder"
+          mkdir -p "fork/$folder"
+          git archive HEAD | tar -x -C "fork/$folder"
+          cd fork
+          git add -A "$folder"
+          if git diff --cached --quiet; then
+            git push --dry-run -q origin "HEAD:$branch"  # proves the token can still push
+            echo "Already in sync with ${GITHUB_SHA::7}."
+            exit 0
+          fi
+          git diff --cached --stat | tail -n 20
+          git -c user.name="github-actions[bot]" \
+              -c user.email="41898099+github-actions[bot]@users.noreply.github.com" \
+              commit -q -m "Sync analog_design_bench with the author repository at ${GITHUB_SHA::7}"
+          git push -q origin "HEAD:$branch"
+          echo "Pushed ${GITHUB_SHA::7} to the pull request."
