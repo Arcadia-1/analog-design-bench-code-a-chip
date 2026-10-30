@@ -182,7 +182,7 @@ and at most 1.72 GHz at 1.8 V. It is checked at 27 PVT points (three process cor
 ### Colab
 
 Open the [Colab notebook](https://colab.research.google.com/github/Arcadia-1/analog-design-bench-code-a-chip/blob/main/analog_design_bench.ipynb)
-and run all cells. The setup cell fetches this repository and, when necessary, builds ngspice-46. The one-time build takes
+and run all cells. The setup cell fetches this repository as submitted (tag `isscc27`) and, when necessary, builds ngspice-46. The one-time build takes
 approximately two minutes on a two-core Colab machine.
 
 ### Local
